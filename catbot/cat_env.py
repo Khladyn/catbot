@@ -399,7 +399,7 @@ class CatChaseEnv(gym.Env):
 
         return self._get_obs(), float(reward), bool(self.done), False, info
 
-    def render(self, mode: str = "human"):
+    def render(self) -> Optional[np.ndarray]:
         if self.screen is None:
             width = self.grid_size * self.tile_size
             height = self.grid_size * self.tile_size
@@ -421,30 +421,56 @@ class CatChaseEnv(gym.Env):
         current_time = time.time()
         dt = current_time - self.last_render_time
         self.last_render_time = current_time
-        
+
+        # 🛑 START: Draw the recorded path 🛑
+        if hasattr(self, 'path_history'):
+            # Drawing a gradient path from old (darker yellow) to new (lighter yellow)
+            path_length = len(self.path_history)
+            for i, (r, c) in enumerate(self.path_history):
+                # Calculate color: Closer to the end of the path means Lighter Yellow
+                # Use 'i / path_length' to get a factor between 0.0 and 1.0
+                color_factor = i / path_length
+
+                # Lighter yellow gradient: Starts at (200, 200, 0) and ends at (255, 255, 150)
+                red = int(200 + 55 * color_factor)
+                green = int(200 + 55 * color_factor)
+                blue = int(0 + 150 * color_factor)
+                color = (red, green, blue)
+
+                # Calculate pixel position for the center of the tile
+                center_x = int((c * self.tile_size) + (self.tile_size / 2))
+                center_y = int((r * self.tile_size) + (self.tile_size / 2))
+
+                radius = 3
+
+                # Draw a circle on the screen
+                pygame.draw.circle(self.screen, color, (center_x, center_y), radius)
+        # 🛑 END: Draw the recorded path 🛑
+
         for i in range(2):
             diff = self.agent_pos[i] - self.agent_visual_pos[i]
             if abs(diff) > 0.01:
                 self.agent_visual_pos[i] += np.clip(diff * self.animation_speed * dt, -1, 1)
-            
+
             if abs(self.agent_bump_offset[i]) > 0.001:
                 self.agent_bump_offset[i] *= max(0, 1 - self.bump_spring * dt)
-        
+
         self.cat.update_visual_pos(dt, self.animation_speed)
-        
+
         old_cat_pos = self.cat.pos.copy()
         if not np.array_equal(old_cat_pos, self.cat.pos):
             for i in range(2):
                 if old_cat_pos[i] == self.cat.pos[i] and (
-                    (old_cat_pos[i] == 0 and self.cat.pos[i] == 0) or 
-                    (old_cat_pos[i] == self.grid_size - 1 and self.cat.pos[i] == self.grid_size - 1)
+                        (old_cat_pos[i] == 0 and self.cat.pos[i] == 0) or
+                        (old_cat_pos[i] == self.grid_size - 1 and self.cat.pos[i] == self.grid_size - 1)
                 ):
-                    self.cat_bump_offset[i] = self.bump_magnitude if old_cat_pos[i] == self.grid_size - 1 else -self.bump_magnitude
-        
+                    self.cat_bump_offset[i] = self.bump_magnitude if old_cat_pos[
+                                                                         i] == self.grid_size - 1 else -self.bump_magnitude
+
         for i in range(2):
             if abs(self.cat_bump_offset[i]) > 0.001:
                 self.cat_bump_offset[i] *= max(0, 1 - self.bump_spring * dt)
-        
+
         cat_x = (self.cat.visual_pos[1] + self.cat_bump_offset[1]) * self.tile_size
         cat_y = (self.cat.visual_pos[0] + self.cat_bump_offset[0]) * self.tile_size
         cat_rect = pygame.Rect(cat_x, cat_y, self.tile_size, self.tile_size)
