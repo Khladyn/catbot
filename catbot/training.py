@@ -1,5 +1,5 @@
 import random
-from typing import Tuple, List
+from typing import Dict, List, Tuple
 import numpy as np
 from utility import play_q_table
 from cat_env import make_env
@@ -26,18 +26,21 @@ current_alpha = ALPHA
 # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
 #############################################################################
 
-# Updated return type hint: Q-table (np.ndarray) and steps_per_episode (List[int])
-def train_bot(cat_name, render: int = -1) -> Tuple[np.ndarray, List[int]]:
+# TODO: Remove Tuple and List return from final submission
+def train_bot(cat_name, render: int = -1) -> Tuple[Dict[int, np.ndarray], List[int]]:
+    # TODO: Override instructions and add global declaration
     global current_epsilon, current_alpha
+
     env = make_env(cat_type=cat_name)
 
-    # 2. OPTIMIZATION: Initialize Q-table as a single NumPy array (225 states x 4 actions)
-    state_space_size = env.observation_space.n
-    action_space_size = env.action_space.n
-    q_table = np.zeros((state_space_size, action_space_size))
+    # Initialize Q-table with all possible states (0-9999)
+    # Initially, all action values are zero.
+    q_table: Dict[int, np.ndarray] = {
+        state: np.zeros(env.action_space.n) for state in range(10000)
+    }
 
     # Training hyperparameters
-    episodes = 5000
+    episodes = 5000  # Training is capped at 5000 episodes for this project
 
     #############################################################################
     # TODO: YOU MAY DECLARE OTHER VARIABLES AND PERFORM INITIALIZATIONS HERE.   #
@@ -53,83 +56,76 @@ def train_bot(cat_name, render: int = -1) -> Tuple[np.ndarray, List[int]]:
     #############################################################################
 
     for ep in range(1, episodes + 1):
+        #############################################################################
+        # TODO: IMPLEMENT THE Q-LEARNING TRAINING LOOP HERE.                      #
+        #############################################################################
+        # Hint: These are the general steps you must implement for each episode.    #
+        # 1. Reset the environment to start a new episode.                          #
+        # 2. Decide whether to explore or exploit.                                  #
+        # 3. Take the action and observe the next state.                            #
+        # 4. Since this environment doesn't give rewards, compute reward manually   #
+        # 5. Update the Q-table accordingly based on agent's rewards.               #
+        #############################################################################
+
+        # 1. Reset environment
         obs, info = env.reset()
         done = False
         steps = 0
 
         while not done:
-            # 2. Decide whether to explore or exploit (Epsilon-Greedy)
+            # 2. Decide whether to explore or exploit
             if random.random() < current_epsilon:
-                action = env.action_space.sample()  # Explore (Random action)
+                action = env.action_space.sample()  # Explore
             else:
-                # 1. REDUCE OSCILLATION: Implement Random Tie-Breaking
+                # Exploit: Randomly break ties
                 max_q = np.max(q_table[obs])
-
-                # Get the indices (actions) that equal the max Q-value.
                 best_actions = np.where(q_table[obs] == max_q)[0]
-
-                # Randomly choose one of the best actions.
                 action = random.choice(best_actions)
-                # --------------------------------------------------
 
-            # 3. Take the action and observe the next state.
+            # 3. Take action and observe
             new_obs, _, terminated, truncated, info = env.step(action)
             steps += 1
 
-            # 4. SIMPLIFICATION/REWARDS: Manual reward calculation
+            # 4. Compute reward manually
             reward = 0.0
-
             if terminated:
-                # Cat caught! High positive reward
-                reward = 100.0
+                reward = 100.0  # Cat caught
             elif env.cat.current_distance < env.cat.prev_distance:
-                # Got closer to the cat
-                reward = 1.0
+                reward = 1.0  # Got closer
             elif env.cat.current_distance > env.cat.prev_distance:
-                # Moved farther away (Severe Penalty)
-                reward = -5.0
+                reward = -5.0  # Moved farther
             else:
-                # Distance is the same (Penalty for stalling/shaking)
-                reward = -0.5
+                reward = -0.5  # Stalled
 
-            # 5. Update the Q-table (Q-Learning Formula)
-            old_value = q_table[obs, action]  # 2. OPTIMIZATION: NumPy array indexing
-            next_max = np.max(q_table[new_obs])  # 2. OPTIMIZATION: NumPy array indexing
+            # 5. Update Q-table (using the dictionary)
+            old_value = q_table[obs][action]
+            next_max = np.max(q_table[new_obs])
 
-            # Q(s, a) = (1 - alpha) * Q(s, a) + alpha * [reward + gamma * max(Q(s', a'))]
+            # Q-Learning Formula
             new_value = (1 - current_alpha) * old_value + current_alpha * (reward + GAMMA * next_max)
-            q_table[obs, action] = new_value  # 2. OPTIMIZATION: NumPy array indexing
+            q_table[obs][action] = new_value
 
-            # Set current observation to new observation
             obs = new_obs
             done = terminated or truncated
 
-        # Log the steps taken for this episode
+        # --- End of while loop ---
+
         steps_per_episode.append(steps)
 
-        # Decay Hyperparameters after the episode ends
+        # Decay hyperparameters
         current_epsilon = max(MIN_EPSILON, current_epsilon * EPSILON_DECAY)
-        # 4. Q-Learning Core: Decay Alpha
         current_alpha = max(MIN_ALPHA, current_alpha * ALPHA_DECAY)
 
         #############################################################################
         # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
         #############################################################################
 
-        # 🛑 Print status to show core metrics 🛑
-        print(
-            f'Episode {ep}/{episodes}: Epsilon {current_epsilon:.3f}, Alpha {current_alpha:.4f}, Steps {steps}')
-
         # If rendering is enabled, play an episode every 'render' episodes
         if render != -1 and (ep == 1 or ep % render == 0):
             viz_env = make_env(cat_type=cat_name)
+            play_q_table(viz_env, q_table, max_steps=100, move_delay=0.02,
+                         window_title=f"{cat_name}: Training Episode {ep}/{episodes}")
+            print('episode', ep)
 
-            steps_taken = play_q_table(
-                viz_env, q_table, max_steps=100, move_delay=0.02,
-                window_title=f"{cat_name}: Training Episode {ep}/{episodes} (Epsilon: {current_epsilon:.3f})"
-            )
-
-            print(f'[RENDERED] episode {ep} finished. Steps: {steps_taken}')
-
-    # Return the Q-table (NumPy array) and the steps data
+    # TODO: Remove steps_per_episode from final submission
     return q_table, steps_per_episode

@@ -247,7 +247,7 @@ class SpiderCat(Cat):
 
     def _get_sprite_path(self) -> str:
         # You can create a new sprite or just re-use one
-        return "images/spider-dp.png"
+        return "images/spidercat-dp.png"
 
     def move(self) -> None:
         target_distance = 3
