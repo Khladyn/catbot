@@ -1,7 +1,6 @@
 import time
 import pygame
 import numpy as np
-from cat_env import make_env
 
 def play_game(env):
     obs, _ = env.reset()
@@ -43,6 +42,14 @@ def play_game(env):
 
 def play_q_table(env, q_table, move_delay=0.25, max_steps=1000, window_title=None):
     obs, _ = env.reset()
+
+    # 🛑 REMOVE THIS: Initialize the list to store path coordinates (row, col)
+    path_history = []
+
+    # 🛑 REMOVE THIS: Attach the path list to the environment object
+    # This allows the render function in cat_env.py to access the path.
+    env.path_history = path_history
+
     env.render()
     if window_title:
         pygame.display.set_caption(window_title)
@@ -53,6 +60,10 @@ def play_q_table(env, q_table, move_delay=0.25, max_steps=1000, window_title=Non
     moves = 0
 
     while not done:
+
+        # 🛑 REMOVE THIS: Record the bot's current position BEFORE the move
+        path_history.append(env.agent_pos.copy())
+
         env.render()
         current_time = time.time()
         if current_time >= next_move_time:
@@ -69,12 +80,15 @@ def play_q_table(env, q_table, move_delay=0.25, max_steps=1000, window_title=Non
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     env.close()
-                    return
+                    # Return steps on manual quit
+                    return moves
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
                     env.close()
-                    return
+                    # Return steps on manual quit
+                    return moves
 
     env.render()
     time.sleep(1)
     env.close()
-    return terminated
+    # 🛑 CORRECT RETURN: Return the final step count 🛑
+    return moves
