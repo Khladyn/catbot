@@ -72,6 +72,8 @@ def train_bot(cat_name, render: int = -1) -> Tuple[Dict[int, np.ndarray], List[i
         done = False
         steps = 0
 
+        max_training_steps = 250
+
         while not done:
             # 2. Decide whether to explore or exploit
             if random.random() < current_epsilon:
@@ -107,6 +109,9 @@ def train_bot(cat_name, render: int = -1) -> Tuple[Dict[int, np.ndarray], List[i
 
             obs = new_obs
             done = terminated or truncated
+
+            if steps >= max_training_steps:
+                done = True
 
         # --- End of while loop ---
 
