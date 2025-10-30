@@ -4,8 +4,8 @@ from cat_env import make_env
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Play CatBot environment in freeplay mode.')
-    parser.add_argument('--cat', 
-                      choices=['mittens', 'batmeow', 'paotsin', 'peekaboo', 'squiddyboi', 'trainer'],
+    parser.add_argument('--cat',
+                        choices=['mittens', 'batmeow', 'paotsin', 'peekaboo', 'squiddyboi', 'trainer', 'spidercat', 'cheddar', 'pumpkinpie', 'milky', 'taro'],
                       default='batmeow',
                       help='Type of cat to play against (default: mittens)')
     

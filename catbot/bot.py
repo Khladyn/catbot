@@ -6,7 +6,7 @@ from utility import play_q_table
 def main():
     parser = argparse.ArgumentParser(description='Train and play Cat Chase bot')
     parser.add_argument('--cat',
-                        choices=['mittens', 'batmeow', 'paotsin', 'peekaboo', 'squiddyboi', 'trainer'],
+                        choices=['mittens', 'batmeow', 'paotsin', 'peekaboo', 'squiddyboi', 'trainer', 'spidercat', 'cheddar', 'pumpkinpie', 'milky', 'taro'],
                         default='batmeow',
                         help='Type of cat to train against (default: mittens)')
     parser.add_argument('--render',
@@ -28,7 +28,7 @@ def main():
     env = make_env(cat_type=args.cat)
 
     # 🛑 CAPTURE THE FINAL STEP COUNT 🛑
-    final_steps_taken = play_q_table(env, q_table, max_steps=60, window_title='Cat Chase - Final Trained Bot')
+    final_steps_taken = play_q_table(env, q_table, max_steps=60, window_title=f'Cat Chase - Final Trained Bot - {args.cat}')
 
     # 🛑 UPDATE THE PRINT STATEMENT 🛑
     print("\nTraining complete! Starting game with trained bot...")
